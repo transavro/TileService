@@ -1,0 +1,150 @@
+syntax = "proto3";
+
+package Cw_TileService;
+
+import   "google/api/annotations.proto";
+
+
+service TileService{
+    rpc CloudwalkerPrimePages(PrimePagesRequest) returns (CloudwalkerSchedule){
+        option (google.api.http) = {
+                get:"/cloudwalkerPrimePages/{vendor}/{brand}"
+        };
+    }
+
+    rpc GetPage(PageRequest) returns (PageResponse) {
+        option (google.api.http) = {
+                get:"/page/{vendor}/{brand}/{pageName}"
+        };
+    }
+
+    rpc GetCarousel(CarouselRequest) returns (CarouselResponse) {
+        option (google.api.http) = {
+                get:"/carousel/{vendor}/{brand}/{pageName}"
+        };
+    }
+
+    rpc GetRow(RowRequest) returns (RowResponse){
+        option (google.api.http) = {
+                get:"/row/{vendor}/{brand}/{pageName}/{rowName}/{rowType}"
+        };
+    }
+
+    rpc GetContent(RowRequest) returns (stream ContentTile){
+        option (google.api.http) = {
+                get:"/content/{vendor}/{brand}/{pageName}/{rowName}/{rowType}"
+        };
+    }
+}
+
+
+// Prime Pages
+message CloudwalkerSchedule{
+    repeated Page pages = 1;
+}
+
+message Page{
+    string pageName = 1;
+    string pageEndpoint = 2;
+}
+
+
+message PrimePagesRequest{
+    string vendor = 1;
+    string brand = 2;
+}
+
+// Pages Request
+message PageRequest{
+    string vendor = 1;
+    string brand = 2;
+    string pageName = 3;
+
+}
+
+
+message PageResponse{
+    string carouselEndpoint = 1;
+    repeated string rowContentEndpoint = 2;
+}
+
+
+// Carousel Request
+message CarouselRequest{
+    string vendor = 1;
+    string brand = 2;
+    string pageName = 3;
+}
+
+message CarouselResponse{
+    repeated Carousel carousel = 1;
+    string carouselBaseUrl = 2;
+}
+
+
+message Carousel{
+    string imageUrl = 1;
+    string target = 2;
+    string title = 3;
+    string packageName = 4;
+}
+
+// Row Request
+enum TileType {
+    ImageTile = 0;
+    VideoTile = 1;
+    FeatureTile = 2;
+    AdvertiseTile = 3;
+    CarouselTile = 4;
+}
+
+message ContentTile{
+    string title = 1;
+    string mediaUrl = 2;
+    TileType tileType = 3;
+    string poster = 4;
+    string portrait = 5;
+    bool isDetailPage = 6;
+    string packageName = 7;
+    string contentId = 8;
+    repeated string target = 9;
+    string realeaseDate = 10;
+}
+
+message RowRequest{
+    string vendor = 1;
+    string brand = 2;
+    string pageName = 3;
+    string rowName = 4;
+    string rowType = 5;
+}
+
+enum RowLayout{
+    Landscape = 0;
+    Portrait = 1;
+    Square = 3;
+    Circle = 4;
+}
+
+enum RowType{
+    Editorial = 0;
+    Recommendation  = 1 ;
+    Dynamic  = 2;
+}
+
+
+message InterRowResponse{
+    string rowName = 1;
+    RowLayout rowLayout = 2;
+    string contentBaseUrl = 3;
+    string contentId = 4;
+    bool shuffle = 5;
+}
+
+
+message RowResponse{
+    string rowName = 1;
+    RowLayout rowLayout = 2;
+    string contentBaseUrl = 3;
+    repeated ContentTile contentTiles = 4;
+}
