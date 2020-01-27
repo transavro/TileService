@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "title": "TileService.proto",
-    "version": "1.0.0"
+    "version": "version not set"
   },
   "consumes": [
     "application/json"
@@ -37,36 +37,6 @@
           },
           {
             "name": "pageName",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "TileService"
-        ]
-      }
-    },
-    "/cloudwalkerPrimePages/{vendor}/{brand}": {
-      "get": {
-        "operationId": "CloudwalkerPrimePages",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/Cw_TileServiceCloudwalkerSchedule"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "vendor",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "brand",
             "in": "path",
             "required": true,
             "type": "string"
@@ -208,6 +178,32 @@
           "TileService"
         ]
       }
+    },
+    "/schedule": {
+      "post": {
+        "operationId": "CloudwalkerPrimePages",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Cw_TileServiceCloudwalkerSchedule"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Cw_TileServicePrimePagesRequest"
+            }
+          }
+        ],
+        "tags": [
+          "TileService"
+        ]
+      }
     }
   },
   "definitions": {
@@ -315,6 +311,17 @@
           "items": {
             "type": "string"
           }
+        }
+      }
+    },
+    "Cw_TileServicePrimePagesRequest": {
+      "type": "object",
+      "properties": {
+        "vendor": {
+          "type": "string"
+        },
+        "brand": {
+          "type": "string"
         }
       }
     },

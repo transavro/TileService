@@ -1,7 +1,9 @@
 package apihandler
 
 import (
+	RecommendationService "github.com/transavro/RecommenderService/proto"
 	pb "github.com/transavro/TileService/proto"
+	recPb "github.com/transavro/RecommenderService/proto"
 	"context"
 	"fmt"
 	"github.com/go-redis/redis"
@@ -9,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"io"
 	"log"
 	"strings"
 	"sync"
@@ -17,6 +20,7 @@ import (
 type Server struct {
 	TileCollection *mongo.Collection
 	RedisConnection  *redis.Client
+	RecommendationClient RecommendationService.RecommendationServiceClient
 }
 
 func(s *Server) checkInRedis(redisKey string) bool{
@@ -129,7 +133,73 @@ func (s *Server) GetRow(ctx context.Context,  request *pb.RowRequest) (*pb.RowRe
 					}
 					response.ContentTiles = append(response.ContentTiles, &contentTile)
 				}
-			}else {
+			} else if request.RowType == strings.ToLower(pb.RowType_Recommendation_CB.String())  {
+
+				log.Println("Recommended CB ========================> ")
+				tvEmac := "702ED98CAFF4"
+				resp, err := s.RecommendationClient.GetContentbasedData(ctx, &recPb.GetRecommendationRequest{UserId: tvEmac})
+				if err != nil {
+					return nil, err
+				}
+
+				for {
+					movieTile, err := resp.Recv()
+					if err == io.EOF {
+						resp.CloseSend()
+						break
+					}
+					if err != nil {
+						log.Fatal(err)
+					}
+					var contentTile pb.ContentTile
+					contentTile.Title = movieTile.Title
+					contentTile.ContentId = movieTile.ContentId
+					contentTile.Target = movieTile.Target
+					contentTile.PackageName = movieTile.PackageName
+					contentTile.Portrait = movieTile.Portrait
+					contentTile.MediaUrl = movieTile.MediaUrl
+					contentTile.TileType = pb.TileType_ImageTile
+					contentTile.Poster = movieTile.Poster
+					contentTile.IsDetailPage = movieTile.IsDetailPage
+					contentTile.RealeaseDate = movieTile.RealeaseDate
+
+					response.ContentTiles = append(response.ContentTiles, &contentTile)
+				}
+
+			}else if request.RowType == strings.ToLower(pb.RowType_Recommendation_CF.String())  {
+
+				log.Println("Recommended CF ========================> ")
+				tvEmac := "702ED98CAFF4"
+				resp, err := s.RecommendationClient.GetCollabrativeFilteringData(ctx, &recPb.GetRecommendationRequest{UserId: tvEmac})
+				if err != nil {
+					return nil, err
+				}
+
+				for {
+					movieTile, err := resp.Recv()
+					if err == io.EOF {
+						resp.CloseSend()
+						break
+					}
+					if err != nil {
+						log.Fatal(err)
+					}
+					var contentTile pb.ContentTile
+					contentTile.Title = movieTile.Title
+					contentTile.ContentId = movieTile.ContentId
+					contentTile.Target = movieTile.Target
+					contentTile.PackageName = movieTile.PackageName
+					contentTile.Portrait = movieTile.Portrait
+					contentTile.MediaUrl = movieTile.MediaUrl
+					contentTile.TileType = pb.TileType_ImageTile
+					contentTile.Poster = movieTile.Poster
+					contentTile.IsDetailPage = movieTile.IsDetailPage
+					contentTile.RealeaseDate = movieTile.RealeaseDate
+
+					response.ContentTiles = append(response.ContentTiles, &contentTile)
+				}
+
+			}else  {
 				var result []string
 				if interResp.Shuffle == true {
 					result, err = s.RedisConnection.SRandMemberN(interResp.ContentId, 15).Result()

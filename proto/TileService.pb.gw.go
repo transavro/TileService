@@ -35,33 +35,12 @@ func request_TileService_CloudwalkerPrimePages_0(ctx context.Context, marshaler 
 	var protoReq PrimePagesRequest
 	var metadata runtime.ServerMetadata
 
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["vendor"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "vendor")
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-
-	protoReq.Vendor, err = runtime.String(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "vendor", err)
-	}
-
-	val, ok = pathParams["brand"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "brand")
-	}
-
-	protoReq.Brand, err = runtime.String(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "brand", err)
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.CloudwalkerPrimePages(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -73,33 +52,12 @@ func local_request_TileService_CloudwalkerPrimePages_0(ctx context.Context, mars
 	var protoReq PrimePagesRequest
 	var metadata runtime.ServerMetadata
 
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["vendor"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "vendor")
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-
-	protoReq.Vendor, err = runtime.String(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "vendor", err)
-	}
-
-	val, ok = pathParams["brand"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "brand")
-	}
-
-	protoReq.Brand, err = runtime.String(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "brand", err)
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := server.CloudwalkerPrimePages(ctx, &protoReq)
@@ -529,7 +487,7 @@ func request_TileService_GetContent_0(ctx context.Context, marshaler runtime.Mar
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
 func RegisterTileServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server TileServiceServer) error {
 
-	mux.Handle("GET", pattern_TileService_CloudwalkerPrimePages_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_TileService_CloudwalkerPrimePages_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -657,7 +615,7 @@ func RegisterTileServiceHandler(ctx context.Context, mux *runtime.ServeMux, conn
 // "TileServiceClient" to call the correct interceptors.
 func RegisterTileServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client TileServiceClient) error {
 
-	mux.Handle("GET", pattern_TileService_CloudwalkerPrimePages_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_TileService_CloudwalkerPrimePages_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -761,7 +719,7 @@ func RegisterTileServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux
 }
 
 var (
-	pattern_TileService_CloudwalkerPrimePages_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"cloudwalkerPrimePages", "vendor", "brand"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_TileService_CloudwalkerPrimePages_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"schedule"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_TileService_GetPage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2, 1, 0, 4, 1, 5, 3}, []string{"page", "vendor", "brand", "pageName"}, "", runtime.AssumeColonVerbOpt(true)))
 

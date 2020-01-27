@@ -6,6 +6,7 @@ import (
 	codecs "github.com/amsokol/mongo-go-driver-protobuf"
 	"github.com/go-redis/redis"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	recPb "github.com/transavro/RecommenderService/proto"
 	"github.com/transavro/TileService/apihandler"
 	pb "github.com/transavro/TileService/proto"
 	"go.mongodb.org/mongo-driver/bson"
@@ -25,6 +26,8 @@ const (
 	schedularMongoHost = "mongodb://192.168.1.143:27017"
 	schedularRedisHost = ":6379"
 	developmentMongo   = "mongodb://dev-uni.cloudwalker.tv:6592"
+	grpc_port        = ":7759"
+	rest_port		 = ":7760"
 )
 
 // private type for Context keys
@@ -71,7 +74,21 @@ func unaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServ
 	return handler(ctx, req)
 }
 
+func makingServiceConnection(tragetServicePort string) (*grpc.ClientConn, error){
+	conn , err := grpc.Dial(tragetServicePort, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("did not connect: %s", err)
+	}
+	return conn, err
+}
+
 func startGRPCServer(address string) error {
+
+	conn, err := makingServiceConnection(":7765")
+	if err != nil {
+		log.Fatal(err)
+	}
+	c :=  recPb.NewRecommendationServiceClient(conn)
 
 	// create a listener on TCP port
 	lis, err := net.Listen("tcp", address)
@@ -81,6 +98,7 @@ func startGRPCServer(address string) error {
 	s := apihandler.Server{
 		getMongoVendorCollection("cloudwalker", "schedule", developmentMongo),
 		getRedisClient(schedularRedisHost),
+		c,
 	}
 
 	grpcServer := grpc.NewServer()               // attach the Ping service to the server
@@ -137,12 +155,9 @@ func getRedisClient(redisHost string) *redis.Client {
 
 func main() {
 
-	grpcAddress := fmt.Sprintf(":%d", 7773)
-	restAddress := fmt.Sprintf(":%d", 7774)
-
 	// fire the gRPC server in a goroutine
 	go func() {
-		err := startGRPCServer(grpcAddress)
+		err := startGRPCServer(grpc_port)
 		if err != nil {
 			log.Fatalf("failed to start gRPC server: %s", err)
 		}
@@ -150,7 +165,7 @@ func main() {
 
 	// fire the REST server in a goroutine
 	go func() {
-		err := startRESTServer(restAddress, grpcAddress)
+		err := startRESTServer(rest_port, grpc_port)
 		if err != nil {
 			log.Fatalf("failed to start gRPC server: %s", err)
 		}

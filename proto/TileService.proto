@@ -8,7 +8,8 @@ import   "google/api/annotations.proto";
 service TileService{
     rpc CloudwalkerPrimePages(PrimePagesRequest) returns (CloudwalkerSchedule){
         option (google.api.http) = {
-                get:"/cloudwalkerPrimePages/{vendor}/{brand}"
+                post:"/schedule"
+                body: "*"
         };
     }
 
@@ -126,11 +127,15 @@ enum RowLayout{
     Circle = 4;
 }
 
+
 enum RowType{
     Editorial = 0;
-    Recommendation  = 1 ;
+    Recommendation_CB  = 1 ;
     Dynamic  = 2;
+    Recommendation_CF  = 3 ;
+    Web = 4;
 }
+
 
 
 message InterRowResponse{
