@@ -9,15 +9,17 @@ import (
 	recPb "github.com/transavro/RecommenderService/proto"
 	"github.com/transavro/TileService/apihandler"
 	pb "github.com/transavro/TileService/proto"
+	pbAuth "github.com/transavro/AuthService/proto"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	"log"
 	"net"
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -37,42 +39,6 @@ const (
 	clientIDKey contextKey = iota
 )
 
-func credMatcher(headerName string) (mdName string, ok bool) {
-	if headerName == "Login" || headerName == "Password" {
-		return headerName, true
-	}
-	return "", false
-}
-
-// authenticateAgent check the client credentials
-func authenticateClient(ctx context.Context, s *apihandler.Server) (string, error) {
-	if md, ok := metadata.FromIncomingContext(ctx); ok {
-		clientLogin := strings.Join(md["login"], "")
-		clientPassword := strings.Join(md["password"], "")
-		if clientLogin != "nayan" {
-			return "", fmt.Errorf("unknown user %s", clientLogin)
-		}
-		if clientPassword != "makasare" {
-			return "", fmt.Errorf("bad password %s", clientPassword)
-		}
-		log.Printf("authenticated client: %s", clientLogin)
-		return "42", nil
-	}
-	return "", fmt.Errorf("missing credentials")
-}
-
-func unaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	s, ok := info.Server.(*apihandler.Server)
-	if !ok {
-		return nil, fmt.Errorf("unable to cast the server")
-	}
-	clientID, err := authenticateClient(ctx, s)
-	if err != nil {
-		return nil, err
-	}
-	ctx = context.WithValue(ctx, clientIDKey, clientID)
-	return handler(ctx, req)
-}
 
 func makingServiceConnection(tragetServicePort string) (*grpc.ClientConn, error){
 	conn , err := grpc.Dial(tragetServicePort, grpc.WithInsecure())
@@ -81,6 +47,57 @@ func makingServiceConnection(tragetServicePort string) (*grpc.ClientConn, error)
 	}
 	return conn, err
 }
+
+
+func unaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	log.Println("unaryInterceptor")
+	err := checkingJWTToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return handler(ctx, req)
+}
+
+func checkingJWTToken(ctx context.Context) error{
+	meta, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return status.Error(codes.NotFound, fmt.Sprintf("no auth meta-data found in request" ))
+	}
+
+	token := meta["token"]
+
+	if len(token) == 0 {
+		return  status.Error(codes.NotFound, fmt.Sprintf("Token not found" ))
+	}
+
+	// calling auth service
+	conn, err := grpc.Dial(":7757", grpc.WithInsecure())
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+
+	// Auth here
+	authClient := pbAuth.NewAuthServiceClient(conn)
+	_, err = authClient.ValidateToken(context.Background(), &pbAuth.Token{
+		Token: token[0],
+	})
+	if err != nil {
+		return  status.Error(codes.NotFound, fmt.Sprintf("Invalid token:  %s ", err ))
+	}else {
+		return nil
+	}
+}
+
+// streamAuthIntercept intercepts to validate authorization
+func streamIntercept(server interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler, ) error {
+	err := checkingJWTToken(stream.Context())
+	if err != nil {
+		return err
+	}
+	return handler(server, stream)
+}
+
 
 func startGRPCServer(address string) error {
 
@@ -101,7 +118,11 @@ func startGRPCServer(address string) error {
 		c,
 	}
 
-	grpcServer := grpc.NewServer()               // attach the Ping service to the server
+	serverOptions := []grpc.ServerOption{grpc.UnaryInterceptor(unaryInterceptor), grpc.StreamInterceptor(streamIntercept)}
+
+	// attach the Ping service to the server
+	grpcServer := grpc.NewServer(serverOptions...)
+	// attach the Ping service to the server
 	pb.RegisterTileServiceServer(grpcServer, &s) // start the server
 	//log.Printf("starting HTTP/2 gRPC server on %s", address)
 	if err := grpcServer.Serve(lis); err != nil {
@@ -114,7 +135,7 @@ func startRESTServer(address, grpcAddress string) error {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	mux := runtime.NewServeMux(runtime.WithIncomingHeaderMatcher(credMatcher))
+	mux := runtime.NewServeMux(runtime.WithIncomingHeaderMatcher(runtime.DefaultHeaderMatcher))
 
 	opts := []grpc.DialOption{grpc.WithInsecure()} // Register ping
 
