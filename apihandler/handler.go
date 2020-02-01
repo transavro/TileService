@@ -1,9 +1,10 @@
 package apihandler
 
 import (
-	RecommendationService "github.com/transavro/RecommenderService/proto"
+
 	pb "github.com/transavro/TileService/proto"
 	recPb "github.com/transavro/RecommenderService/proto"
+	pbSch "github.com/transavro/ScheduleService/proto"
 	"context"
 	"fmt"
 	"github.com/go-redis/redis"
@@ -20,7 +21,7 @@ import (
 type Server struct {
 	TileCollection *mongo.Collection
 	RedisConnection  *redis.Client
-	RecommendationClient RecommendationService.RecommendationServiceClient
+	RecommendationClient recPb.RecommendationServiceClient
 }
 
 func(s *Server) checkInRedis(redisKey string) bool{
@@ -120,18 +121,19 @@ func (s *Server) GetRow(ctx context.Context,  request *pb.RowRequest) (*pb.RowRe
 		response.ContentBaseUrl = interResp.ContentBaseUrl
 
 		if s.checkInRedis(interResp.ContentId) {
+
 			if request.RowType == strings.ToLower(pb.RowType_Editorial.String()) {
 				result, err := s.RedisConnection.ZRange(interResp.GetContentId(), 0  , -1).Result()
 				if err != nil {
 					return nil, status.Error(codes.Unavailable, fmt.Sprintf("Failed to get Result from Cache ", err))
 				}
 				for _ , v := range result {
-					var contentTile pb.ContentTile
+					var contentTile pbSch.Content
 					err = proto.Unmarshal([]byte(v), &contentTile)
 					if err != nil {
 						continue
 					}
-					response.ContentTiles = append(response.ContentTiles, &contentTile)
+					response.Content = append(response.Content, &contentTile)
 				}
 			} else if request.RowType == strings.ToLower(pb.RowType_Recommendation_CB.String())  {
 
@@ -151,19 +153,16 @@ func (s *Server) GetRow(ctx context.Context,  request *pb.RowRequest) (*pb.RowRe
 					if err != nil {
 						log.Fatal(err)
 					}
-					var contentTile pb.ContentTile
-					contentTile.Title = movieTile.Title
-					contentTile.ContentId = movieTile.ContentId
-					contentTile.Target = movieTile.Target
-					contentTile.PackageName = movieTile.PackageName
-					contentTile.Portrait = movieTile.Portrait
-					contentTile.MediaUrl = movieTile.MediaUrl
-					contentTile.TileType = pb.TileType_ImageTile
-					contentTile.Poster = movieTile.Poster
-					contentTile.IsDetailPage = movieTile.IsDetailPage
-					contentTile.RealeaseDate = movieTile.RealeaseDate
-
-					response.ContentTiles = append(response.ContentTiles, &contentTile)
+					var contentTile pbSch.Content
+					contentTile.Title = movieTile.GetTitle()
+					contentTile.ContentId = movieTile.GetContentId()
+					contentTile.Play = movieTile.GetPlay()
+					contentTile.Portrait = movieTile.GetPortrait()
+					contentTile.Video = movieTile.GetVideo()
+					contentTile.Type = movieTile.GetType()
+					contentTile.Poster = movieTile.GetPoster()
+					contentTile.IsDetailPage = movieTile.GetIsDetailPage()
+					response.Content = append(response.Content, &contentTile)
 				}
 
 			}else if request.RowType == strings.ToLower(pb.RowType_Recommendation_CF.String())  {
@@ -184,19 +183,16 @@ func (s *Server) GetRow(ctx context.Context,  request *pb.RowRequest) (*pb.RowRe
 					if err != nil {
 						log.Fatal(err)
 					}
-					var contentTile pb.ContentTile
-					contentTile.Title = movieTile.Title
-					contentTile.ContentId = movieTile.ContentId
-					contentTile.Target = movieTile.Target
-					contentTile.PackageName = movieTile.PackageName
-					contentTile.Portrait = movieTile.Portrait
-					contentTile.MediaUrl = movieTile.MediaUrl
-					contentTile.TileType = pb.TileType_ImageTile
-					contentTile.Poster = movieTile.Poster
-					contentTile.IsDetailPage = movieTile.IsDetailPage
-					contentTile.RealeaseDate = movieTile.RealeaseDate
-
-					response.ContentTiles = append(response.ContentTiles, &contentTile)
+					var contentTile pbSch.Content
+					contentTile.Title = movieTile.GetTitle()
+					contentTile.ContentId = movieTile.GetContentId()
+					contentTile.Play = movieTile.GetPlay()
+					contentTile.Portrait = movieTile.GetPortrait()
+					contentTile.Video = movieTile.GetVideo()
+					contentTile.Type = movieTile.GetType()
+					contentTile.Poster = movieTile.GetPoster()
+					contentTile.IsDetailPage = movieTile.GetIsDetailPage()
+					response.Content = append(response.Content, &contentTile)
 				}
 
 			}else  {
@@ -215,12 +211,13 @@ func (s *Server) GetRow(ctx context.Context,  request *pb.RowRequest) (*pb.RowRe
 
 				for i , v := range result {
 					if i < 15 {
-						var contentTile pb.ContentTile
+						log.Println("bingo 1 ")
+						var contentTile pbSch.Content
 						err = proto.Unmarshal([]byte(v), &contentTile)
 						if err != nil {
 							continue
 						}
-						response.ContentTiles = append(response.ContentTiles, &contentTile)
+						response.Content = append(response.Content, &contentTile)
 					}
 				}
 			}
@@ -243,7 +240,7 @@ func(s *Server) GetContent(request *pb.RowRequest, stream pb.TileService_GetCont
 				return status.Error(codes.Unavailable, fmt.Sprintf("Failed to get Result from Cache ", err))
 			}
 			for _ , v := range result {
-				var contentTile pb.ContentTile
+				var contentTile pbSch.Content
 				err = proto.Unmarshal([]byte(v), &contentTile)
 				if err != nil {
 					continue
@@ -268,7 +265,7 @@ func(s *Server) GetContent(request *pb.RowRequest, stream pb.TileService_GetCont
 				go func(redisConn *redis.Client) error {
 					for _, k := range result {
 						//Important lesson, challenge was to convert interface{} to byte. used  ([]byte(k.(string)))
-						var movieTile pb.ContentTile
+						var movieTile pbSch.Content
 						err = proto.Unmarshal([]byte(k), &movieTile)
 						if err != nil {
 							return status.Error(codes.Internal, fmt.Sprintf("Failed to unMarshal result ", err))

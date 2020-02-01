@@ -3,7 +3,16 @@ syntax = "proto3";
 package Cw_TileService;
 
 import   "google/api/annotations.proto";
+import   "github.com/transavro/ScheduleService/proto/SchedularService.proto";
 
+
+/*
+    **** NOTE *****
+    while complining  the pb the amlosok compline line didnt work
+    as we have used SchedularService.proto above to get the content tile.
+    that line is important for CURD in mongo to remove the xxx from pb
+    and use time and data in mongo from pb
+*/
 
 service TileService{
     rpc CloudwalkerPrimePages(PrimePagesRequest) returns (CloudwalkerSchedule){
@@ -31,7 +40,7 @@ service TileService{
         };
     }
 
-    rpc GetContent(RowRequest) returns (stream ContentTile){
+    rpc GetContent(RowRequest) returns (stream SchedularService.Content){
         option (google.api.http) = {
                 get:"/content/{vendor}/{brand}/{pageName}/{rowName}/{rowType}"
         };
@@ -90,28 +99,6 @@ message Carousel{
     string packageName = 4;
 }
 
-// Row Request
-enum TileType {
-    ImageTile = 0;
-    VideoTile = 1;
-    FeatureTile = 2;
-    AdvertiseTile = 3;
-    CarouselTile = 4;
-}
-
-message ContentTile{
-    string title = 1;
-    string mediaUrl = 2;
-    TileType tileType = 3;
-    string poster = 4;
-    string portrait = 5;
-    bool isDetailPage = 6;
-    string packageName = 7;
-    string contentId = 8;
-    repeated string target = 9;
-    string realeaseDate = 10;
-}
-
 message RowRequest{
     string vendor = 1;
     string brand = 2;
@@ -151,5 +138,7 @@ message RowResponse{
     string rowName = 1;
     RowLayout rowLayout = 2;
     string contentBaseUrl = 3;
-    repeated ContentTile contentTiles = 4;
+    repeated SchedularService.Content content = 4;
 }
+
+
