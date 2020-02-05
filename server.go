@@ -6,6 +6,7 @@ import (
 	codecs "github.com/amsokol/mongo-go-driver-protobuf"
 	"github.com/go-redis/redis"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/joho/godotenv"
 	recPb "github.com/transavro/RecommenderService/proto"
 	"github.com/transavro/TileService/apihandler"
 	pb "github.com/transavro/TileService/proto"
@@ -20,24 +21,12 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"time"
 )
 
-const (
-	//defaultHost          = "mongodb://nayan:tlwn722n@cluster0-shard-00-00-8aov2.mongodb.net:27017,cluster0-shard-00-01-8aov2.mongodb.net:27017,cluster0-shard-00-02-8aov2.mongodb.net:27017/test?ssl=true&replicaSet=Cluster0-shard-0&authSource=admin&retryWrites=true&w=majority"
-	schedularMongoHost = "mongodb://192.168.1.143:27017"
-	schedularRedisHost = ":6379"
-	developmentMongo   = "mongodb://dev-uni.cloudwalker.tv:6592"
-	grpc_port        = ":7759"
-	rest_port		 = ":7760"
-)
 
-// private type for Context keys
-type contextKey int
-
-const (
-	clientIDKey contextKey = iota
-)
+var mongoDbHost, redisPort, grpcPort, restPort  string
 
 
 func makingServiceConnection(tragetServicePort string) (*grpc.ClientConn, error){
@@ -46,6 +35,13 @@ func makingServiceConnection(tragetServicePort string) (*grpc.ClientConn, error)
 		log.Fatalf("did not connect: %s", err)
 	}
 	return conn, err
+}
+
+func loadEnv(){
+	mongoDbHost = os.Getenv("MONGO_HOST")
+	redisPort = os.Getenv("REDIS_PORT")
+	grpcPort = os.Getenv("GRPC_PORT")
+	restPort = os.Getenv("REST_PORT")
 }
 
 
@@ -113,8 +109,8 @@ func startGRPCServer(address string) error {
 		return fmt.Errorf("failed to listen: %v", err)
 	} // create a server instance
 	s := apihandler.Server{
-		getMongoVendorCollection("cloudwalker", "schedule", developmentMongo),
-		getRedisClient(schedularRedisHost),
+		getMongoVendorCollection("cloudwalker", "schedule", mongoDbHost),
+		getRedisClient(redisPort),
 		c,
 	}
 
@@ -176,11 +172,19 @@ func getRedisClient(redisHost string) *redis.Client {
 	return client
 }
 
+func init() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Println(err.Error())
+	}
+	loadEnv()
+}
+
 func main() {
 
 	// fire the gRPC server in a goroutine
 	go func() {
-		err := startGRPCServer(grpc_port)
+		err := startGRPCServer(grpcPort)
 		if err != nil {
 			log.Fatalf("failed to start gRPC server: %s", err)
 		}
@@ -188,7 +192,7 @@ func main() {
 
 	// fire the REST server in a goroutine
 	go func() {
-		err := startRESTServer(rest_port, grpc_port)
+		err := startRESTServer(restPort, grpcPort)
 		if err != nil {
 			log.Fatalf("failed to start gRPC server: %s", err)
 		}

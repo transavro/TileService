@@ -157,7 +157,7 @@ func (s *Server) GetRow(ctx context.Context,  request *pb.RowRequest) (*pb.RowRe
 					contentTile.Title = movieTile.GetTitle()
 					contentTile.ContentId = movieTile.GetContentId()
 					contentTile.Play = movieTile.GetPlay()
-					contentTile.Portrait = movieTile.GetPortrait()
+					contentTile.Portriat = movieTile.GetPortriat()
 					contentTile.Video = movieTile.GetVideo()
 					contentTile.Type = movieTile.GetType()
 					contentTile.Poster = movieTile.GetPoster()
@@ -187,7 +187,7 @@ func (s *Server) GetRow(ctx context.Context,  request *pb.RowRequest) (*pb.RowRe
 					contentTile.Title = movieTile.GetTitle()
 					contentTile.ContentId = movieTile.GetContentId()
 					contentTile.Play = movieTile.GetPlay()
-					contentTile.Portrait = movieTile.GetPortrait()
+					contentTile.Portriat = movieTile.GetPortriat()
 					contentTile.Video = movieTile.GetVideo()
 					contentTile.Type = movieTile.GetType()
 					contentTile.Poster = movieTile.GetPoster()
@@ -211,7 +211,6 @@ func (s *Server) GetRow(ctx context.Context,  request *pb.RowRequest) (*pb.RowRe
 
 				for i , v := range result {
 					if i < 15 {
-						log.Println("bingo 1 ")
 						var contentTile pbSch.Content
 						err = proto.Unmarshal([]byte(v), &contentTile)
 						if err != nil {
