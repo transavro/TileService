@@ -96,7 +96,8 @@ func startRESTServer(address, grpcAddress string) error {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	mux := runtime.NewServeMux(runtime.WithIncomingHeaderMatcher(credMatcher))
+
+	mux := runtime.NewServeMux(runtime.WithIncomingHeaderMatcher(runtime.DefaultHeaderMatcher), runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{OrigName:false, EnumsAsInts:true, EmitDefaults:true}) )
 
 	opts := []grpc.DialOption{grpc.WithInsecure()} // Register ping
 
@@ -107,8 +108,7 @@ func startRESTServer(address, grpcAddress string) error {
 	}
 
 	log.Printf("starting HTTP/1.1 REST server on %s", address)
-	http.ListenAndServe(address, mux)
-	return nil
+	return http.ListenAndServe(address, mux)
 }
 
 func getMongoVendorCollection(dbName, collectionName, mongoHost string) *mongo.Collection {
