@@ -114,6 +114,7 @@ func (s *Server) GetRow(ctx context.Context,  request *pb.RowRequest) (*pb.RowRe
 		response.RowName = interResp.RowName
 		response.RowLayout = interResp.RowLayout
 		response.ContentBaseUrl = interResp.ContentBaseUrl
+		response.RowIndex = interResp.RowIndex
 
 		if s.checkInRedis(interResp.ContentId) {
 			if request.RowType == strings.ToLower(pb.RowType_Editorial.String()) {

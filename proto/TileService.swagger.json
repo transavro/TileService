@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "title": "TileService.proto",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "consumes": [
     "application/json"
@@ -301,6 +301,10 @@
         },
         "pageEndpoint": {
           "type": "string"
+        },
+        "pageIndex": {
+          "type": "integer",
+          "format": "int32"
         }
       }
     },
@@ -345,6 +349,10 @@
           "items": {
             "$ref": "#/definitions/Cw_TileServiceContentTile"
           }
+        },
+        "rowIndex": {
+          "type": "integer",
+          "format": "int32"
         }
       }
     },
